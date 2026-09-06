@@ -1,0 +1,22 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'com.chhawa.pratishthan.varganimanager'
+    compileSdk 35
+
+    defaultConfig {
+        applicationId 'com.chhawa.pratishthan.varganimanager'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+}
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(17)
+    }
+}
