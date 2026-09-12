@@ -578,6 +578,16 @@ public class MainActivity extends android.app.Activity {
 
     private void empty(LinearLayout list,String text){TextView e=tv(text,15,MUTED,true);e.setGravity(Gravity.CENTER);e.setPadding(dp(10),dp(30),dp(10),dp(30));list.addView(e,lp(-1,dp(110)));}
     private void error(EditText field,String message){field.setError(message);field.requestFocus();}
+    private void showSuccessDialog(String title, String message, final Runnable after) {
+        new AlertDialog.Builder(this)
+                .setTitle("✓  " + title)
+                .setMessage(message)
+                .setPositiveButton(tr("OK", "ठीक"), (d, w) -> {
+                    if (after != null) after.run();
+                })
+                .show();
+    }
+
     private void showErrorDialog(String title,String message){new AlertDialog.Builder(this).setTitle(title).setMessage(message==null?"":message).setPositiveButton(tr("OK","ठीक"),null).show();}
 
     private JSONArray getArray(String key){try{return new JSONArray(prefs.getString(key,"[]"));}catch(Exception e){return new JSONArray();}}
