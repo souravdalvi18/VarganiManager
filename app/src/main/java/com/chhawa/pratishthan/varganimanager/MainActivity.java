@@ -397,9 +397,10 @@ public class MainActivity extends android.app.Activity {
         ScrollView scroll = new ScrollView(this); scroll.setBackgroundColor(BG);
         LinearLayout c = col(); c.setPadding(dp(16), dp(14), dp(16), dp(24)); scroll.addView(c);
 
-        JSONObject existing = null;
-        JSONArray all = getArray(VARGANI);
-        if (editIndex >= 0 && editIndex < all.length()) existing = all.optJSONObject(editIndex);
+       JSONArray all = getArray(VARGANI);
+        final JSONObject existing = (editIndex >= 0 && editIndex < all.length())
+        ? all.optJSONObject(editIndex)
+        : null;
 
         c.addView(sectionTitle(tr("Contributor Details", "वर्गणीदाराची माहिती")));
         EditText name = input(tr("Full name *", "पूर्ण नाव *"), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
