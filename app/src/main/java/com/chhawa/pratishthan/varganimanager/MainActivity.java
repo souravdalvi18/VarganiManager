@@ -388,16 +388,18 @@ public class MainActivity extends android.app.Activity {
                 }).show();
     }
 
-    private void showAddVargani() {
-        currentScreen = "addVargani";
-        createRoot();
-        root.addView(topBar(tr("Add Vargani", "वर्गणी नोंदवा"), true, null, ""), lp(-1, dp(68)));
+    private void showAddVargani() { showVarganiForm(-1); }
 
-        ScrollView scroll = new ScrollView(this);
-        scroll.setBackgroundColor(BG);
-        LinearLayout c = col();
-        c.setPadding(dp(16), dp(14), dp(16), dp(24));
-        scroll.addView(c);
+    private void showVarganiForm(int editIndex) {
+        currentScreen = editIndex >= 0 ? "editVargani" : "addVargani";
+        createRoot();
+        root.addView(topBar(tr(editIndex >= 0 ? "Edit Vargani" : "Add Vargani", editIndex >= 0 ? "वर्गणी संपादित करा" : "वर्गणी नोंदवा"), true, null, ""), lp(-1, dp(68)));
+        ScrollView scroll = new ScrollView(this); scroll.setBackgroundColor(BG);
+        LinearLayout c = col(); c.setPadding(dp(16), dp(14), dp(16), dp(24)); scroll.addView(c);
+
+        JSONObject existing = null;
+        JSONArray all = getArray(VARGANI);
+        if (editIndex >= 0 && editIndex < all.length()) existing = all.optJSONObject(editIndex);
 
         c.addView(sectionTitle(tr("Contributor Details", "वर्गणीदाराची माहिती")));
         EditText name = input(tr("Full name *", "पूर्ण नाव *"), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_WORDS);
@@ -405,115 +407,49 @@ public class MainActivity extends android.app.Activity {
         c.addView(name, lp(-1, dp(54))); addSpacer(c, 10);
         c.addView(phone, lp(-1, dp(54))); addSpacer(c, 14);
 
-        TextView amountLabel = sectionTitle(tr("Amount", "रक्कम"));
-        c.addView(amountLabel);
+        c.addView(sectionTitle(tr("Amount", "रक्कम")));
         EditText amount = input(tr("Enter amount *", "रक्कम टाका *"), InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        c.addView(amount, lp(-1, dp(54)));
-        addSpacer(c, 10);
-
-        HorizontalScrollView qs = new HorizontalScrollView(this);
-        qs.setHorizontalScrollBarEnabled(false);
+        c.addView(amount, lp(-1, dp(54))); addSpacer(c, 10);
+        HorizontalScrollView qs = new HorizontalScrollView(this); qs.setHorizontalScrollBarEnabled(false);
         LinearLayout qrow = row();
-        String[] quick = {"101", "251", "501", "1001", "2100"};
-        for (String q : quick) {
-            Button qb = actionButton("₹ " + q, WHITE, TEXT);
-            LinearLayout.LayoutParams qp = lp(dp(82), dp(44));
-            qp.setMargins(0, 0, dp(8), 0);
-            qrow.addView(qb, qp);
-            qb.setOnClickListener(v -> amount.setText(q));
+        for (String q : new String[]{"101","251","501","1001","2100"}) {
+            Button qb = actionButton("₹ " + q, WHITE, TEXT); LinearLayout.LayoutParams qp=lp(dp(82),dp(44)); qp.setMargins(0,0,dp(8),0); qrow.addView(qb,qp); qb.setOnClickListener(v->amount.setText(q));
         }
-        qs.addView(qrow);
-        c.addView(qs, lp(-1, dp(48)));
-        addSpacer(c, 14);
+        qs.addView(qrow); c.addView(qs, lp(-1, dp(48))); addSpacer(c, 14);
 
         c.addView(sectionTitle(tr("Payment Mode", "पेमेंट प्रकार")));
-        RadioGroup mode = new RadioGroup(this);
-        mode.setOrientation(RadioGroup.HORIZONTAL);
-        RadioButton cash = new RadioButton(this); cash.setText(tr("Cash", "रोख")); cash.setTextSize(15); cash.setTextColor(TEXT); cash.setChecked(true);
+        RadioGroup mode = new RadioGroup(this); mode.setOrientation(RadioGroup.HORIZONTAL);
+        RadioButton cash = new RadioButton(this); cash.setText(tr("Cash", "रोख")); cash.setTextSize(15); cash.setTextColor(TEXT);
         RadioButton online = new RadioButton(this); online.setText(tr("Online", "ऑनलाइन")); online.setTextSize(15); online.setTextColor(TEXT);
-        mode.addView(cash, lp(0, dp(50), 1)); mode.addView(online, lp(0, dp(50), 1));
-        c.addView(mode, lp(-1, dp(50)));
-        addSpacer(c, 8);
+        mode.addView(cash, lp(0,dp(50),1)); mode.addView(online,lp(0,dp(50),1)); cash.setChecked(true); c.addView(mode,lp(-1,dp(50))); addSpacer(c,8);
 
         c.addView(sectionTitle(tr("Date (optional)", "दिनांक (ऐच्छिक)")));
-        EditText date = input(tr("Tap to choose a date", "दिनांक निवडण्यासाठी टॅप करा"), InputType.TYPE_CLASS_TEXT);
-        date.setFocusable(false);
-        c.addView(date, lp(-1, dp(54)));
-        date.setOnClickListener(v -> pickDate(date));
-        addSpacer(c, 12);
-
+        EditText date=input(tr("Tap to choose a date", "दिनांक निवडण्यासाठी टॅप करा"),InputType.TYPE_CLASS_TEXT); date.setFocusable(false); c.addView(date,lp(-1,dp(54))); date.setOnClickListener(v->pickDate(date)); addSpacer(c,12);
         c.addView(sectionTitle(tr("Note (optional)", "नोंद (ऐच्छिक)")));
-        EditText note = input(tr("Any note", "काही नोंद"), InputType.TYPE_CLASS_TEXT);
-        c.addView(note, lp(-1, dp(54)));
-        addSpacer(c, 16);
+        EditText note=input(tr("Any note", "काही नोंद"),InputType.TYPE_CLASS_TEXT); c.addView(note,lp(-1,dp(54))); addSpacer(c,18);
 
-        CheckBox sendAfter = new CheckBox(this);
-        sendAfter.setText(tr("Ask me to send WhatsApp / SMS after saving", "सेव्ह केल्यानंतर WhatsApp / SMS पाठवण्याचा पर्याय दाखवा"));
-        sendAfter.setTextSize(14); sendAfter.setTextColor(TEXT); sendAfter.setChecked(true);
-        c.addView(sendAfter, lp(-1, dp(54)));
-        addSpacer(c, 8);
+        if (existing != null) {
+            name.setText(existing.optString("name")); phone.setText(existing.optString("phone")); amount.setText(formatAmount(existing.optDouble("amount",0)));
+            date.setText(existing.optString("date")); note.setText(existing.optString("note"));
+            if ("Online".equalsIgnoreCase(existing.optString("mode"))) online.setChecked(true); else cash.setChecked(true);
+        }
 
-        Button save = actionButton("✓  " + tr("Save Vargani", "वर्गणी सेव्ह करा"), GREEN, WHITE);
-        c.addView(save, lp(-1, dp(56)));
-        save.setOnClickListener(v -> {
-            String n = name.getText().toString().trim();
-            String ph = phone.getText().toString().trim();
-            String am = amount.getText().toString().trim();
-            if (n.isEmpty()) { error(name, tr("Enter the name", "नाव टाका")); return; }
-            if (digits(ph).length() < 10) { error(phone, tr("Enter a valid mobile number", "योग्य मोबाईल नंबर टाका")); return; }
-            double val = parse(am);
-            if (val <= 0) { error(amount, tr("Enter a valid amount", "योग्य रक्कम टाका")); return; }
-
-            JSONObject obj = new JSONObject();
+        Button save=actionButton("✓  "+tr(editIndex>=0?"Update Vargani":"Save Vargani",editIndex>=0?"वर्गणी अपडेट करा":"वर्गणी सेव्ह करा"),GREEN,WHITE); c.addView(save,lp(-1,dp(56)));
+        save.setOnClickListener(v->{
+            String n=name.getText().toString().trim(), ph=phone.getText().toString().trim(), am=amount.getText().toString().trim();
+            if(n.isEmpty()){error(name,tr("Enter the name","नाव टाका"));return;}
+            if(digits(ph).length()<10){error(phone,tr("Enter a valid mobile number","योग्य मोबाईल नंबर टाका"));return;}
+            double val=parse(am); if(val<=0){error(amount,tr("Enter a valid amount","योग्य रक्कम टाका"));return;}
             try {
-                obj.put("name", n);
-                obj.put("phone", ph);
-                obj.put("amount", val);
-                obj.put("mode", cash.isChecked() ? "Cash" : "Online");
-                obj.put("date", date.getText().toString().trim());
-                obj.put("note", note.getText().toString().trim());
-                obj.put("createdAt", System.currentTimeMillis());
-                JSONArray a = getArray(VARGANI);
-                a.put(obj);
-                saveArray(VARGANI, a);
-                Toast.makeText(this, tr("✓ Vargani saved", "✓ वर्गणी सेव्ह झाली"), Toast.LENGTH_SHORT).show();
-                if (sendAfter.isChecked()) showMessageChooser(n, ph, val);
-                else showHome();
-            } catch (Exception ex) {
-                showErrorDialog(tr("Could not save", "सेव्ह करता आले नाही"), ex.getMessage());
-            }
+                JSONObject obj=existing==null?new JSONObject():existing;
+                obj.put("name",n); obj.put("phone",ph); obj.put("amount",val); obj.put("mode",cash.isChecked()?"Cash":"Online");
+                obj.put("date",date.getText().toString().trim()); obj.put("note",note.getText().toString().trim());
+                if(!obj.has("createdAt")) obj.put("createdAt",System.currentTimeMillis());
+                if(editIndex>=0) all.put(editIndex,obj); else all.put(obj); saveArray(VARGANI,all);
+                showSuccessDialog(editIndex>=0?tr("Vargani updated","वर्गणी अपडेट झाली"):tr("Vargani saved","वर्गणी सेव्ह झाली"),n+"  •  "+money(val),()->showContributors());
+            } catch(Exception ex){showErrorDialog(tr("Could not save","सेव्ह करता आले नाही"),ex.getMessage());}
         });
-        root.addView(scroll, lp(-1, 0, 1));
-    }
-
-    private void showMessageChooser(String name, String phone, double amount) {
-        String message = marathiMessage(name, amount);
-        LinearLayout box = col();
-        box.setPadding(dp(18), dp(8), dp(18), dp(4));
-        TextView previewTitle = tv(tr("Message Preview", "संदेशाचा नमुना"), 14, MUTED, true);
-        box.addView(previewTitle);
-        EditText preview = new EditText(this);
-        preview.setText(message);
-        preview.setTextSize(15);
-        preview.setTextColor(TEXT);
-        preview.setGravity(Gravity.TOP | Gravity.START);
-        preview.setSingleLine(false);
-        preview.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_MULTI_LINE | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        preview.setPadding(dp(14), dp(14), dp(14), dp(14));
-        preview.setBackground(strokeBg(Color.rgb(249, 246, 242), BORDER, 14));
-        box.addView(preview, lp(-1, dp(190)));
-
-        new AlertDialog.Builder(this)
-                .setTitle(tr("Contribution Saved", "वर्गणी सेव्ह झाली"))
-                .setMessage(tr("Choose where you want to prepare the thank-you message.", "धन्यवादाचा संदेश कुठे तयार करायचा ते निवडा."))
-                .setView(box)
-                .setPositiveButton("WhatsApp", (d, w) -> openWhatsApp(phone, preview.getText().toString()))
-                .setNegativeButton("SMS", (d, w) -> openSms(phone, preview.getText().toString()))
-                .setNeutralButton(tr("Done", "पूर्ण"), (d, w) -> showHome())
-                .setOnDismissListener(d -> {
-                    // Keep the saved record even if the user closes the dialog.
-                })
-                .show();
+        root.addView(scroll,lp(-1,0,1));
     }
 
     private String marathiMessage(String name, double amount) {
@@ -552,109 +488,45 @@ public class MainActivity extends android.app.Activity {
         }
     }
 
-    private void showAddExpense() {
-        currentScreen = "addExpense";
-        createRoot();
-        root.addView(topBar(tr("Add Expense", "खर्च नोंदवा"), true, null, ""), lp(-1, dp(68)));
-        ScrollView scroll = new ScrollView(this);
-        LinearLayout c = col();
-        c.setBackgroundColor(BG);
-        c.setPadding(dp(16), dp(14), dp(16), dp(24));
-        scroll.addView(c);
+    private void showAddExpense() { showExpenseForm(-1); }
 
-        c.addView(sectionTitle(tr("Expense Details", "खर्चाची माहिती")));
-        EditText name = input(tr("Expense name * (e.g. decoration, food, sound)", "खर्चाचे नाव * (उदा. सजावट, जेवण, साऊंड)"), InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
-        EditText amount = input(tr("Amount *", "रक्कम *"), InputType.TYPE_CLASS_NUMBER | InputType.TYPE_NUMBER_FLAG_DECIMAL);
-        EditText date = input(tr("Date (optional)", "दिनांक (ऐच्छिक)"), InputType.TYPE_CLASS_TEXT);
-        EditText note = input(tr("Note (optional)", "नोंद (ऐच्छिक)"), InputType.TYPE_CLASS_TEXT);
-        date.setFocusable(false);
-        c.addView(name, lp(-1, dp(54))); addSpacer(c, 10);
-        c.addView(amount, lp(-1, dp(54))); addSpacer(c, 10);
-        c.addView(date, lp(-1, dp(54))); addSpacer(c, 10);
-        date.setOnClickListener(v -> pickDate(date));
-        c.addView(note, lp(-1, dp(54))); addSpacer(c, 18);
-
-        Button save = actionButton("✓  " + tr("Save Expense", "खर्च सेव्ह करा"), ORANGE, WHITE);
-        c.addView(save, lp(-1, dp(56)));
-        save.setOnClickListener(v -> {
-            String n = name.getText().toString().trim();
-            double val = parse(amount.getText().toString().trim());
-            if (n.isEmpty()) { error(name, tr("Enter expense name", "खर्चाचे नाव टाका")); return; }
-            if (val <= 0) { error(amount, tr("Enter a valid amount", "योग्य रक्कम टाका")); return; }
-            try {
-                JSONObject o = new JSONObject();
-                o.put("name", n);
-                o.put("amount", val);
-                o.put("date", date.getText().toString().trim());
-                o.put("note", note.getText().toString().trim());
-                o.put("createdAt", System.currentTimeMillis());
-                JSONArray a = getArray(EXPENSES); a.put(o); saveArray(EXPENSES, a);
-                new AlertDialog.Builder(this)
-                        .setTitle(tr("Expense Saved", "खर्च सेव्ह झाला"))
-                        .setMessage(n + "\n₹" + formatAmount(val))
-                        .setPositiveButton(tr("Done", "पूर्ण"), (d,w) -> showHome()).show();
-            } catch (Exception ex) { showErrorDialog(tr("Could not save", "सेव्ह करता आले नाही"), ex.getMessage()); }
-        });
-        root.addView(scroll, lp(-1, 0, 1));
+    private void showExpenseForm(int editIndex) {
+        currentScreen="expenseForm"; createRoot();
+        root.addView(topBar(tr(editIndex>=0?"Edit Expense":"Add Expense",editIndex>=0?"खर्च संपादित करा":"खर्च नोंदवा"),true,null,""),lp(-1,dp(68)));
+        ScrollView scroll=new ScrollView(this); scroll.setBackgroundColor(BG); LinearLayout c=col(); c.setPadding(dp(16),dp(14),dp(16),dp(24)); scroll.addView(c);
+        JSONArray all=getArray(EXPENSES); JSONObject existing=editIndex>=0&&editIndex<all.length()?all.optJSONObject(editIndex):null;
+        c.addView(sectionTitle(tr("Expense Details","खर्चाची माहिती")));
+        EditText name=input(tr("Expense name * (e.g. decoration, food, sound)","खर्चाचे नाव * (उदा. सजावट, जेवण, साऊंड)"),InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_FLAG_CAP_SENTENCES);
+        EditText amount=input(tr("Amount *","रक्कम *"),InputType.TYPE_CLASS_NUMBER|InputType.TYPE_NUMBER_FLAG_DECIMAL);
+        EditText date=input(tr("Date (optional)","दिनांक (ऐच्छिक)"),InputType.TYPE_CLASS_TEXT); date.setFocusable(false);
+        EditText note=input(tr("Note (optional)","नोंद (ऐच्छिक)"),InputType.TYPE_CLASS_TEXT);
+        c.addView(name,lp(-1,dp(54)));addSpacer(c,10);c.addView(amount,lp(-1,dp(54)));addSpacer(c,10);c.addView(date,lp(-1,dp(54)));date.setOnClickListener(v->pickDate(date));addSpacer(c,10);c.addView(note,lp(-1,dp(54)));addSpacer(c,18);
+        if(existing!=null){name.setText(existing.optString("name"));amount.setText(formatAmount(existing.optDouble("amount",0)));date.setText(existing.optString("date"));note.setText(existing.optString("note"));}
+        Button save=actionButton("✓  "+tr(editIndex>=0?"Update Expense":"Save Expense",editIndex>=0?"खर्च अपडेट करा":"खर्च सेव्ह करा"),ORANGE,WHITE);c.addView(save,lp(-1,dp(56)));
+        save.setOnClickListener(v->{String n=name.getText().toString().trim();double val=parse(amount.getText().toString().trim());if(n.isEmpty()){error(name,tr("Enter expense name","खर्चाचे नाव टाका"));return;}if(val<=0){error(amount,tr("Enter a valid amount","योग्य रक्कम टाका"));return;}try{JSONObject o=existing==null?new JSONObject():existing;o.put("name",n);o.put("amount",val);o.put("date",date.getText().toString().trim());o.put("note",note.getText().toString().trim());if(!o.has("createdAt"))o.put("createdAt",System.currentTimeMillis());if(editIndex>=0)all.put(editIndex,o);else all.put(o);saveArray(EXPENSES,all);showSuccessDialog(editIndex>=0?tr("Expense updated","खर्च अपडेट झाला"):tr("Expense saved","खर्च सेव्ह झाला"),n+"  •  "+money(val),()->showExpenses());}catch(Exception ex){showErrorDialog(tr("Could not save","सेव्ह करता आले नाही"),ex.getMessage());}});
+        root.addView(scroll,lp(-1,0,1));
     }
 
     private void showContributors() {
-        currentScreen = "contributors";
-        createRoot();
-        root.addView(topBar(tr("Contributors", "वर्गणीदार"), true, null, ""), lp(-1, dp(68)));
-        LinearLayout c = col(); c.setBackgroundColor(BG); c.setPadding(dp(16), dp(12), dp(16), dp(20));
-        EditText search = input(tr("Search by name or mobile", "नाव किंवा मोबाईलने शोधा"), InputType.TYPE_CLASS_TEXT);
-        c.addView(search, lp(-1, dp(52))); addSpacer(c, 10);
-        ScrollView scroll = new ScrollView(this);
-        LinearLayout list = col();
-        scroll.addView(list);
-        c.addView(scroll, lp(-1, 0, 1));
-        root.addView(c, lp(-1, 0, 1));
-
-        Runnable render = () -> {
-            list.removeAllViews();
-            String q = search.getText().toString().trim().toLowerCase(Locale.ROOT);
-            JSONArray a = getArray(VARGANI);
-            ArrayList<JSONObject> records = new ArrayList<>();
-            for (int i=0;i<a.length();i++) {
-                JSONObject o = a.optJSONObject(i); if (o == null) continue;
-                String n=o.optString("name"); String p=o.optString("phone");
-                if (q.isEmpty() || n.toLowerCase(Locale.ROOT).contains(q) || p.contains(q)) records.add(o);
-            }
-            Collections.reverse(records);
-            if (records.isEmpty()) { empty(list, tr("No contributions found.", "वर्गणीची नोंद सापडली नाही.")); return; }
-            HashMap<String, Double> totals = new HashMap<>(); HashMap<String, String> phones = new HashMap<>();
-            for (JSONObject o: records) { String n=o.optString("name"); totals.put(n, totals.getOrDefault(n,0.0)+o.optDouble("amount",0)); phones.put(n,o.optString("phone")); }
-            ArrayList<String> names = new ArrayList<>(totals.keySet());
-            Collections.sort(names, String.CASE_INSENSITIVE_ORDER);
-            for (String n: names) {
-                LinearLayout card = col(); card.setPadding(dp(14),dp(12),dp(14),dp(12)); card.setBackground(strokeBg(WHITE,BORDER,16));
-                TextView title=tv("👤  "+n,16,TEXT,true); TextView p=tv(phones.get(n),12,MUTED,false); TextView total=tv(money(totals.get(n)),18,GREEN,true);
-                card.addView(title); card.addView(p); card.addView(total); list.addView(card,lp(-1,dp(92))); margin(card,0,0,0,9);
-                card.setOnClickListener(v -> showContributorDetails(n));
-            }
-        };
-        search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int a){} public void onTextChanged(CharSequence s,int st,int b,int c){render.run();} public void afterTextChanged(Editable e){}});
-        render.run();
+        currentScreen="contributors"; createRoot(); root.addView(topBar(tr("Contributors","वर्गणीदार"),true,null,""),lp(-1,dp(68)));
+        LinearLayout c=col();c.setBackgroundColor(BG);c.setPadding(dp(16),dp(12),dp(16),dp(20));
+        EditText search=input(tr("Search by name or mobile","नाव किंवा मोबाईलने शोधा"),InputType.TYPE_CLASS_TEXT);c.addView(search,lp(-1,dp(52)));addSpacer(c,10);
+        ScrollView scroll=new ScrollView(this);LinearLayout list=col();scroll.addView(list);c.addView(scroll,lp(-1,0,1));root.addView(c,lp(-1,0,1));
+        Runnable render=()->{list.removeAllViews();String q=search.getText().toString().trim().toLowerCase(Locale.ROOT);JSONArray a=getArray(VARGANI);ArrayList<Integer> ids=new ArrayList<>();for(int i=0;i<a.length();i++){JSONObject o=a.optJSONObject(i);if(o==null)continue;String n=o.optString("name"),p=o.optString("phone");if(q.isEmpty()||n.toLowerCase(Locale.ROOT).contains(q)||p.contains(q))ids.add(i);}Collections.reverse(ids);if(ids.isEmpty()){empty(list,tr("No contributions found.","वर्गणीची नोंद सापडली नाही."));return;}for(int idx:ids){JSONObject o=a.optJSONObject(idx);if(o==null)continue;LinearLayout card=col();card.setPadding(dp(14),dp(12),dp(10),dp(10));card.setBackground(strokeBg(WHITE,BORDER,16));LinearLayout head=row();LinearLayout info=col();info.addView(tv("👤  "+o.optString("name"),16,TEXT,true));info.addView(tv(o.optString("phone"),12,MUTED,false));head.addView(info,lp(0,dp(48),1));head.addView(tv(money(o.optDouble("amount",0)),17,GREEN,true),lp(dp(100),dp(48)));card.addView(head);String meta=o.optString("mode");if(!o.optString("date").isEmpty())meta+=(meta.isEmpty()?"":"  •  ")+o.optString("date");if(!o.optString("note").isEmpty())meta+=(meta.isEmpty()?"":"  •  ")+o.optString("note");card.addView(tv(meta,12,MUTED,false));LinearLayout actions=row();actions.setGravity(Gravity.END);Button edit=actionButton("✎  "+tr("Edit","संपादित"),WHITE,TEXT);Button del=actionButton("🗑  "+tr("Delete","हटवा"),WHITE,RED);actions.addView(edit,lp(dp(100),dp(44)));margin(edit,0,8,6,0);actions.addView(del,lp(dp(100),dp(44)));margin(del,0,8,0,0);card.addView(actions);list.addView(card,lp(-1,dp(145)));margin(card,0,0,0,9);edit.setOnClickListener(v->showVarganiForm(idx));del.setOnClickListener(v->confirmDeleteVargani(idx));}}
+        ;search.addTextChangedListener(new TextWatcher(){public void beforeTextChanged(CharSequence s,int st,int c,int a){}public void onTextChanged(CharSequence s,int st,int b,int c){render.run();}public void afterTextChanged(Editable e){}});render.run();
     }
 
-    private void showContributorDetails(String name) {
-        JSONArray a=getArray(VARGANI); StringBuilder sb=new StringBuilder(); double total=0; int count=0; String phone="";
-        for(int i=0;i<a.length();i++){JSONObject o=a.optJSONObject(i); if(o==null)continue; if(name.equalsIgnoreCase(o.optString("name"))){double x=o.optDouble("amount",0);total+=x;count++;phone=o.optString("phone");sb.append("₹").append(formatAmount(x)).append("  •  ").append(o.optString("mode","-")).append("  •  ").append(o.optString("date","-")).append("\n");}}
-        new AlertDialog.Builder(this).setTitle(name).setMessage(phone+"\n\n"+tr("Contributions: ","वर्गणी संख्या: ")+count+"\n"+tr("Total: ","एकूण: ")+money(total)+"\n\n"+sb).setPositiveButton(tr("Close","बंद"),null).show();
-    }
+    private void showContributorDetails(String name) { showContributors(); }
+
+    private void confirmDeleteVargani(int index){JSONArray a=getArray(VARGANI);JSONObject o=index>=0&&index<a.length()?a.optJSONObject(index):null;if(o==null)return;String title=o.optString("name")+"  •  "+money(o.optDouble("amount",0));new AlertDialog.Builder(this).setTitle(tr("Delete this contribution?","ही वर्गणीची नोंद हटवायची का?")).setMessage(title).setNegativeButton(tr("Cancel","रद्द"),null).setPositiveButton(tr("Delete","हटवा"),(d,w)->{JSONArray fresh=getArray(VARGANI);if(index>=0&&index<fresh.length()){fresh.remove(index);saveArray(VARGANI,fresh);Toast.makeText(this,tr("Contribution deleted","वर्गणीची नोंद हटवली"),Toast.LENGTH_SHORT).show();showContributors();}}).show();}
 
     private void showExpenses() {
-        currentScreen="expenses"; createRoot(); root.addView(topBar(tr("Expenses","खर्च"),true,null,""),lp(-1,dp(68)));
-        ScrollView scroll=new ScrollView(this); scroll.setBackgroundColor(BG); LinearLayout list=col(); list.setPadding(dp(16),dp(14),dp(16),dp(24)); scroll.addView(list); root.addView(scroll,lp(-1,0,1));
-        JSONArray a=getArray(EXPENSES); ArrayList<JSONObject> arr=new ArrayList<>(); for(int i=0;i<a.length();i++){JSONObject o=a.optJSONObject(i);if(o!=null)arr.add(o);} Collections.reverse(arr);
-        if(arr.isEmpty()){empty(list,tr("No expenses recorded yet.","अजून कोणताही खर्च नोंदलेला नाही."));return;}
-        for(JSONObject o:arr){LinearLayout card=col();card.setPadding(dp(14),dp(12),dp(14),dp(12));card.setBackground(strokeBg(WHITE,BORDER,16));
-            card.addView(tv("🧾  "+o.optString("name"),16,TEXT,true)); card.addView(tv("₹"+formatAmount(o.optDouble("amount",0)),19,RED,true));
-            String meta=o.optString("date"); if(!o.optString("note").isEmpty())meta+=(meta.isEmpty()?"":"  •  ")+o.optString("note"); card.addView(tv(meta,12,MUTED,false));
-            list.addView(card,lp(-1,dp(92)));margin(card,0,0,0,9);
-        }
+        currentScreen="expenses";createRoot();root.addView(topBar(tr("Expenses","खर्च"),true,null,""),lp(-1,dp(68)));ScrollView scroll=new ScrollView(this);scroll.setBackgroundColor(BG);LinearLayout list=col();list.setPadding(dp(16),dp(14),dp(16),dp(24));scroll.addView(list);root.addView(scroll,lp(-1,0,1));
+        JSONArray a=getArray(EXPENSES);ArrayList<Integer> ids=new ArrayList<>();for(int i=0;i<a.length();i++)if(a.optJSONObject(i)!=null)ids.add(i);Collections.reverse(ids);if(ids.isEmpty()){empty(list,tr("No expenses recorded yet.","अजून कोणताही खर्च नोंदलेला नाही."));return;}
+        for(int idx:ids){JSONObject o=a.optJSONObject(idx);LinearLayout card=col();card.setPadding(dp(14),dp(12),dp(10),dp(10));card.setBackground(strokeBg(WHITE,BORDER,16));card.addView(tv("🧾  "+o.optString("name"),16,TEXT,true));card.addView(tv("₹"+formatAmount(o.optDouble("amount",0)),19,RED,true));String meta=o.optString("date");if(!o.optString("note").isEmpty())meta+=(meta.isEmpty()?"":"  •  ")+o.optString("note");card.addView(tv(meta,12,MUTED,false));LinearLayout actions=row();actions.setGravity(Gravity.END);Button edit=actionButton("✎  "+tr("Edit","संपादित"),WHITE,TEXT);Button del=actionButton("🗑  "+tr("Delete","हटवा"),WHITE,RED);actions.addView(edit,lp(dp(100),dp(44)));margin(edit,0,8,6,0);actions.addView(del,lp(dp(100),dp(44)));margin(del,0,8,0,0);card.addView(actions);list.addView(card,lp(-1,dp(145)));margin(card,0,0,0,9);edit.setOnClickListener(v->showExpenseForm(idx));del.setOnClickListener(v->confirmDeleteExpense(idx));}
     }
+
+    private void confirmDeleteExpense(int index){JSONArray a=getArray(EXPENSES);JSONObject o=index>=0&&index<a.length()?a.optJSONObject(index):null;if(o==null)return;new AlertDialog.Builder(this).setTitle(tr("Delete this expense?","हा खर्च हटवायचा का?")).setMessage(o.optString("name")+"  •  "+money(o.optDouble("amount",0))).setNegativeButton(tr("Cancel","रद्द"),null).setPositiveButton(tr("Delete","हटवा"),(d,w)->{JSONArray fresh=getArray(EXPENSES);if(index>=0&&index<fresh.length()){fresh.remove(index);saveArray(EXPENSES,fresh);Toast.makeText(this,tr("Expense deleted","खर्चाची नोंद हटवली"),Toast.LENGTH_SHORT).show();showExpenses();}}).show();}
 
     private void showReports() {
         currentScreen="reports"; createRoot(); root.addView(topBar(tr("Reports & Account","अहवाल आणि हिशोब"),true,null,""),lp(-1,dp(68)));
@@ -672,12 +544,35 @@ public class MainActivity extends android.app.Activity {
         if(entries.isEmpty()) empty(c,tr("No contributor data yet.","अजून वर्गणीदारांची माहिती नाही."));
         else {int limit=Math.min(10,entries.size());for(int i=0;i<limit;i++){Map.Entry<String,Double> e=entries.get(i);LinearLayout r=row();TextView n=tv((i+1)+". "+e.getKey(),14,TEXT,true);TextView v=tv(money(e.getValue()),15,GREEN,true);r.addView(n,lp(0,dp(44),1));r.addView(v,lp(dp(110),dp(44)));r.setPadding(dp(12),0,dp(12),0);r.setBackground(strokeBg(WHITE,BORDER,10));c.addView(r,lp(-1,dp(44)));margin(r,0,0,0,7);}}
         addSpacer(c,14); c.addView(sectionTitle(tr("Data Management","डेटा व्यवस्थापन")));
+        Button pdf=actionButton("▣  "+tr("Generate PDF Report","PDF अहवाल तयार करा"),GREEN,WHITE);c.addView(pdf,lp(-1,dp(54)));margin(pdf,0,0,0,10);pdf.setOnClickListener(v->generatePdfReport());
         Button clear=actionButton("⚠  "+tr("Clear all saved data","सर्व सेव्ह केलेला डेटा हटवा"),WHITE,RED);c.addView(clear,lp(-1,dp(52)));clear.setOnClickListener(v->confirmClear());
     }
 
     private TextView reportLine(String label,String value,int valueColor){TextView t=tv(label+"    "+value,15,TEXT,true);t.setPadding(dp(14),0,dp(14),0);t.setMinHeight(dp(52));t.setBackground(strokeBg(WHITE,BORDER,12));t.setTextColor(TEXT);return t;}
 
     private void confirmClear(){new AlertDialog.Builder(this).setTitle(tr("Delete all data?","सर्व डेटा हटवायचा का?" )).setMessage(tr("All saved contributions and expenses will be permanently removed from this phone.","या फोनमधील सर्व वर्गणी आणि खर्च कायमचे हटवले जातील." )).setNegativeButton(tr("Cancel","रद्द"),null).setPositiveButton(tr("Delete","हटवा"),(d,w)->{prefs.edit().remove(VARGANI).remove(EXPENSES).apply();Toast.makeText(this,tr("All data cleared","सर्व डेटा हटवला"),Toast.LENGTH_SHORT).show();showHome();}).show();}
+
+    private byte[] pendingPdfBytes;
+    private static final int CREATE_PDF = 9021;
+
+    private void generatePdfReport(){
+        try{
+            android.graphics.pdf.PdfDocument doc=new android.graphics.pdf.PdfDocument();
+            android.graphics.Paint paint=new android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG);paint.setTypeface(Typeface.DEFAULT);paint.setTextSize(11);paint.setColor(Color.BLACK);
+            android.graphics.Paint bold=new android.graphics.Paint(paint);bold.setTypeface(Typeface.DEFAULT_BOLD);bold.setTextSize(13);
+            int pageNo=1;android.graphics.pdf.PdfDocument.Page page=doc.startPage(new android.graphics.pdf.PdfDocument.PageInfo.Builder(595,842,pageNo).create());android.graphics.Canvas canvas=page.getCanvas();float y=42;
+            canvas.drawText("। छावा प्रतिष्ठान ।",40,y,bold);y+=24;canvas.drawText("Vargani Manager - Complete Report",40,y,bold);y+=20;canvas.drawText("Generated: "+new SimpleDateFormat("dd/MM/yyyy HH:mm",Locale.getDefault()).format(new Date()),40,y,paint);y+=28;
+            double total=totalVargani(),exp=totalExpenses(),cash=modeTotal("Cash"),online=modeTotal("Online");
+            canvas.drawText("Total Vargani: "+money(total),40,y,bold);canvas.drawText("Cash: "+money(cash),210,y,paint);canvas.drawText("Online: "+money(online),330,y,paint);y+=20;canvas.drawText("Expenses: "+money(exp),40,y,paint);canvas.drawText("Balance: "+money(total-exp),210,y,paint);y+=30;
+            canvas.drawText("CONTRIBUTIONS",40,y,bold);y+=20;canvas.drawText("Name",40,y,bold);canvas.drawText("Mobile",210,y,bold);canvas.drawText("Amount",360,y,bold);canvas.drawText("Mode",440,y,bold);y+=16;
+            JSONArray va=getArray(VARGANI);for(int i=0;i<va.length();i++){JSONObject o=va.optJSONObject(i);if(o==null)continue;if(y>800){doc.finishPage(page);pageNo++;page=doc.startPage(new android.graphics.pdf.PdfDocument.PageInfo.Builder(595,842,pageNo).create());canvas=page.getCanvas();y=42;}canvas.drawText(o.optString("name"),40,y,paint);canvas.drawText(o.optString("phone"),210,y,paint);canvas.drawText(money(o.optDouble("amount",0)),360,y,paint);canvas.drawText(o.optString("mode"),440,y,paint);y+=16;}
+            y+=14;if(y>780){doc.finishPage(page);pageNo++;page=doc.startPage(new android.graphics.pdf.PdfDocument.PageInfo.Builder(595,842,pageNo).create());canvas=page.getCanvas();y=42;}canvas.drawText("EXPENSES",40,y,bold);y+=20;canvas.drawText("Expense",40,y,bold);canvas.drawText("Amount",360,y,bold);canvas.drawText("Date",440,y,bold);y+=16;
+            JSONArray ea=getArray(EXPENSES);for(int i=0;i<ea.length();i++){JSONObject o=ea.optJSONObject(i);if(o==null)continue;if(y>800){doc.finishPage(page);pageNo++;page=doc.startPage(new android.graphics.pdf.PdfDocument.PageInfo.Builder(595,842,pageNo).create());canvas=page.getCanvas();y=42;}canvas.drawText(o.optString("name"),40,y,paint);canvas.drawText(money(o.optDouble("amount",0)),360,y,paint);canvas.drawText(o.optString("date"),440,y,paint);y+=16;}
+            doc.finishPage(page);java.io.ByteArrayOutputStream out=new java.io.ByteArrayOutputStream();doc.writeTo(out);doc.close();pendingPdfBytes=out.toByteArray();Intent intent=new Intent(Intent.ACTION_CREATE_DOCUMENT);intent.setType("application/pdf");intent.putExtra(Intent.EXTRA_TITLE,"Chhava_Pratishthan_Vargani_Report.pdf");startActivityForResult(intent,CREATE_PDF);
+        }catch(Exception ex){showErrorDialog(tr("PDF could not be generated","PDF तयार करता आला नाही"),ex.getMessage());}
+    }
+
+    @Override protected void onActivityResult(int requestCode,int resultCode,Intent data){super.onActivityResult(requestCode,resultCode,data);if(requestCode==CREATE_PDF&&resultCode==RESULT_OK&&data!=null&&data.getData()!=null&&pendingPdfBytes!=null){try(java.io.OutputStream os=getContentResolver().openOutputStream(data.getData())){os.write(pendingPdfBytes);os.flush();pendingPdfBytes=null;Toast.makeText(this,tr("PDF saved successfully","PDF यशस्वीपणे सेव्ह झाला"),Toast.LENGTH_LONG).show();}catch(Exception ex){showErrorDialog(tr("Could not save PDF","PDF सेव्ह करता आला नाही"),ex.getMessage());}}}
 
     private void pickDate(EditText target){final java.util.Calendar cal=java.util.Calendar.getInstance();DatePickerDialog d=new DatePickerDialog(this,(v,y,m,day)->{target.setText(String.format(Locale.getDefault(),"%02d/%02d/%04d",day,m+1,y));},cal.get(java.util.Calendar.YEAR),cal.get(java.util.Calendar.MONTH),cal.get(java.util.Calendar.DAY_OF_MONTH));d.show();}
 
